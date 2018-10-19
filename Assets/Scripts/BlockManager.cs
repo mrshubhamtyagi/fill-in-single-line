@@ -1,11 +1,29 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class BlockManager : MonoBehaviour
 {
+    public Block blockPrefab;
+    public Color startBlockColor = Color.red;
+    public int rows = 5;
+    public int cols = 5;
+
     [SerializeField] private List<Block> blockList = new List<Block>();
-    private Queue<Block> blockQueue = new Queue<Block>();
+    private Stack<Block> blockStack = new Stack<Block>();
+
+    private Vector2[,] positions = new Vector2[5, 5]
+    {
+        {new Vector2(-1.8f, 1.8f), new Vector2(-0.9f, 1.8f),new Vector2(0f, 1.8f),new Vector2(0.9f, 1.8f),new Vector2(1.8f, 1.8f)},
+        {new Vector2(-1.8f, 0.9f), new Vector2(-0.9f, 0.9f),new Vector2(0f, 0.9f),new Vector2(0.9f, 0.9f),new Vector2(1.8f, 0.9f)},
+        {new Vector2(-1.8f, 0f), new Vector2(-0.9f, 0f),new Vector2(0f, 0f),new Vector2(0.9f, 0f),new Vector2(1.8f, 0f)},
+        {new Vector2(-1.8f, -0.9f), new Vector2(-0.9f, -0.9f),new Vector2(0f, -0.9f),new Vector2(0.9f, -0.9f),new Vector2(1.8f, -0.9f)},
+        {new Vector2(-1.8f, -1.8f), new Vector2(-0.9f, -1.8f),new Vector2(0f, -1.8f),new Vector2(0.9f, -1.8f),new Vector2(1.8f, -1.8f)}
+    };
+
+    public Block[,] rowBlocks;
+    public Block[,] colBlocks;
 
     #region Getters and Setters
     public Block GetBlockFromList(int index)
@@ -29,37 +47,39 @@ public class BlockManager : MonoBehaviour
             return -1;
         }
     }
-    public void AddToQueue(Block block)
+    public void AddToStack(Block block)
     {
-        blockQueue.Enqueue(block);
-        print(string.Format("{0} is added to the Queue", block.name));
+        blockStack.Push(block);
+        print(string.Format("{0} is added to the Stack", block.name));
+        //StackArray = blockStack.ToArray();
     }
-    public void RemoveFromQueue()
+    public void RemoveFromStack()
     {
         Block removedBlock = null;
 
-        if (blockQueue.Count > 0)
+        if (blockStack.Count > 0)
 
-            removedBlock = blockQueue.Dequeue();
+            removedBlock = blockStack.Pop();
         else
-            Debug.Log("Queue is Empty");
+            Debug.Log("Stack is Empty");
 
         if (removedBlock != null)
-            print(string.Format("{0} is removed from the Queue", removedBlock.name));
+            print(string.Format("{0} is removed from the Stack", removedBlock.name));
+        //StackArray = blockStack.ToArray();
     }
-    public bool IsBlockInQueue(Block block)
+    public bool IsBlockInStack(Block block)
     {
-        if (blockQueue.Count > 0 && blockQueue.Contains(block))
+        if (blockStack.Count > 0 && blockStack.Contains(block))
             return true;
         else
             return false;
     }
-    public int GetBlockIndexInQueue(Block block)
+    public int GetBlockIndexInStack(Block block)
     {
         int index = 0;
-        if (blockQueue.Count > 0)
+        if (blockStack.Count > 0)
         {
-            foreach (Block _block in blockQueue)
+            foreach (Block _block in blockStack)
             {
                 if (_block == block)
                     return index;
@@ -71,56 +91,109 @@ public class BlockManager : MonoBehaviour
         }
         else
         {
-            Debug.Log("Queue is Empty");
+            Debug.Log("Stack is Empty");
             return -1;
         }
 
     }
-    public int GetQueueLength()
+    public Block GetLastBlockInStack()
     {
-        return blockQueue.Count;
+        foreach (Block block in blockStack)
+        {
+            return block;
+        }
+        return null;
     }
-    public void ClearBlockQueue()
+    public int GetStackLength()
     {
-        blockQueue.Clear();
+        return blockStack.Count;
+    }
+    public void ClearStack()
+    {
+        blockStack.Clear();
+    }
+    public bool isStackEmpty()
+    {
+        if (blockStack.Count == 0)
+            return true;
+        else
+            return false;
     }
     #endregion
 
-    private void Awake()
-    {
-        foreach (Transform child in transform)
-            blockList.Add(child.GetComponent<Block>());
-    }
 
     private void Start()
     {
-        print("Block List Count ---->>>> " + blockList.Count);
-        foreach (Block block in blockList)
-            block.transform.GetChild(0).gameObject.SetActive(false);
-    }
+        rowBlocks = new Block[rows, cols];
+        colBlocks = new Block[cols, rows];
 
-    public void RemoveBlocksAfterIndex(int index)
-    {
-        if (index < blockQueue.Count)
+        // Spawn all blocks
+        for (int r = 0; r < rows; r++)
         {
-            int noOfBlocksToDelete = blockQueue.Count - index;
-            for (int i = 0; i < index; i++)
+            for (int c = 0; c < cols; c++)
             {
-                RemoveFromQueue();
+                SpawnBlocks(r, c);
             }
-
-            print(string.Format("{0} blocks removed. New Length is {1}", noOfBlocksToDelete, GetQueueLength()));
         }
-        else
-            Debug.LogError("Invalid Index");
-    }
 
+        // starting block
+        int startBlockIndex = Random.Range(0, blockList.Count);
+        blockList[startBlockIndex].SetAsStartBlock();
+    }
 
     private void Update()
     {
-        if (Input.GetMouseButtonUp(0))
+        if (Input.GetKeyDown(KeyCode.Space))
         {
-            //ClearBlockQueue();
+            print("Last -- " + GetLastBlockInStack().gameObject.name);
         }
+    }
+
+    public bool IsLevelCompleted()
+    {
+        // level is completed when all the blocks are checked
+        if (blockStack.Count == blockList.Count)
+            return true;
+        else
+            return false;
+    }
+
+
+    public void OnLevelCompleted()
+    {
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
+
+    private Block SpawnBlocks(int row, int col)
+    {
+        Block block = Instantiate(blockPrefab, positions[row, col], Quaternion.identity);
+        block.SetCheckBlockColor(startBlockColor);
+        block.transform.GetChild(0).gameObject.SetActive(false);
+        blockList.Add(block);
+        block.gameObject.name = string.Format("Row{0}-Col{1}", row + 1, col + 1);
+        block.transform.SetParent(transform);
+        block.SetPositionInMatrix(new Vector2Int(row, col));
+
+        rowBlocks[row, col] = block;
+        colBlocks[col, row] = block;
+        return block;
+    }
+
+
+    public void RemoveAllBlocksAfterIndex(int index)
+    {
+        if (index < blockStack.Count)
+        {
+            int noOfBlocksToDelete = blockStack.Count - index;
+            for (int i = 0; i < index; i++)
+            {
+                RemoveFromStack();
+            }
+
+            print(string.Format("{0} blocks removed. New Length is {1}", noOfBlocksToDelete, GetStackLength()));
+        }
+        else
+            Debug.LogError("Invalid Index");
     }
 }
