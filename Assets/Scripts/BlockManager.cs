@@ -22,8 +22,11 @@ public class BlockManager : MonoBehaviour
         {new Vector2(-1.8f, -1.8f), new Vector2(-0.9f, -1.8f),new Vector2(0f, -1.8f),new Vector2(0.9f, -1.8f),new Vector2(1.8f, -1.8f)}
     };
 
-    public Block[,] rowBlocks;
-    public Block[,] colBlocks;
+    public Block[] StackArray;
+
+    //public Block[,] rowBlocks;
+    //public Block[,] colBlocks;
+
 
     #region Getters and Setters
     public Block GetBlockFromList(int index)
@@ -50,22 +53,30 @@ public class BlockManager : MonoBehaviour
     public void AddToStack(Block block)
     {
         blockStack.Push(block);
-        print(string.Format("{0} is added to the Stack", block.name));
-        //StackArray = blockStack.ToArray();
+        block.ChangeBlockState(Block.BlockState.Checked);
+        print(string.Format("{0} is CHECKED", block.name));
+        block.SetBlockIndexInStack(GetStackLength() - 1);
+        StackArray = blockStack.ToArray();
     }
-    public void RemoveFromStack()
+    public Block RemoveFromStack()
     {
         Block removedBlock = null;
 
         if (blockStack.Count > 0)
-
+        {
             removedBlock = blockStack.Pop();
+            removedBlock.ChangeBlockState(Block.BlockState.Unchecked);
+            removedBlock.SetBlockIndexInStack(-1);
+        }
+
         else
             Debug.Log("Stack is Empty");
 
         if (removedBlock != null)
-            print(string.Format("{0} is removed from the Stack", removedBlock.name));
-        //StackArray = blockStack.ToArray();
+            print(string.Format("{0} is UNCHECKED", removedBlock.name));
+        StackArray = blockStack.ToArray();
+
+        return removedBlock;
     }
     public bool IsBlockInStack(Block block)
     {
@@ -121,11 +132,10 @@ public class BlockManager : MonoBehaviour
     }
     #endregion
 
-
     private void Start()
     {
-        rowBlocks = new Block[rows, cols];
-        colBlocks = new Block[cols, rows];
+        //rowBlocks = new Block[rows, cols];
+        //colBlocks = new Block[cols, rows];
 
         // Spawn all blocks
         for (int r = 0; r < rows; r++)
@@ -143,6 +153,9 @@ public class BlockManager : MonoBehaviour
 
     private void Update()
     {
+        //if (Input.GetMouseButtonUp(0) && !IsLevelCompleted())
+        //ClearStack();
+
         if (Input.GetKeyDown(KeyCode.Space))
         {
             print("Last -- " + GetLastBlockInStack().gameObject.name);
@@ -161,7 +174,8 @@ public class BlockManager : MonoBehaviour
 
     public void OnLevelCompleted()
     {
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        print("Level Complete");
+        //SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
 
@@ -175,8 +189,8 @@ public class BlockManager : MonoBehaviour
         block.transform.SetParent(transform);
         block.SetPositionInMatrix(new Vector2Int(row, col));
 
-        rowBlocks[row, col] = block;
-        colBlocks[col, row] = block;
+        //rowBlocks[row, col] = block;
+        //colBlocks[col, row] = block;
         return block;
     }
 
@@ -185,13 +199,15 @@ public class BlockManager : MonoBehaviour
     {
         if (index < blockStack.Count)
         {
-            int noOfBlocksToDelete = blockStack.Count - index;
-            for (int i = 0; i < index; i++)
+            //int noOfBlocksToDelete = blockStack.Count - index;
+            int noOfBlocksToDeleted = 0;
+            for (int i = blockStack.Count - 1; i != index; i--)
             {
+                noOfBlocksToDeleted++;
                 RemoveFromStack();
             }
 
-            print(string.Format("{0} blocks removed. New Length is {1}", noOfBlocksToDelete, GetStackLength()));
+            print(string.Format("{0} blocks removed. New Length is {1}", noOfBlocksToDeleted, GetStackLength()));
         }
         else
             Debug.LogError("Invalid Index");
