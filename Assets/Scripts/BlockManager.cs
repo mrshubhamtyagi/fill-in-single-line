@@ -12,6 +12,7 @@ public class BlockManager : MonoBehaviour
 
     [SerializeField] private List<Block> blockList = new List<Block>();
     private Stack<Block> blockStack = new Stack<Block>();
+    private LineManager lineManager;
 
     private Vector2[,] positions = new Vector2[5, 5]
     {
@@ -22,13 +23,10 @@ public class BlockManager : MonoBehaviour
         {new Vector2(-1.8f, -1.8f), new Vector2(-0.9f, -1.8f),new Vector2(0f, -1.8f),new Vector2(0.9f, -1.8f),new Vector2(1.8f, -1.8f)}
     };
 
-    public Block[] StackArray;
-
-    //public Block[,] rowBlocks;
-    //public Block[,] colBlocks;
-
+    //public Block[] StackArray;
 
     #region Getters and Setters
+    /*
     public Block GetBlockFromList(int index)
     {
         if (index < blockList.Count)
@@ -50,13 +48,14 @@ public class BlockManager : MonoBehaviour
             return -1;
         }
     }
+    */
     public void AddToStack(Block block)
     {
         blockStack.Push(block);
         block.ChangeBlockState(Block.BlockState.Checked);
         print(string.Format("{0} is CHECKED", block.name));
         block.SetBlockIndexInStack(GetStackLength() - 1);
-        StackArray = blockStack.ToArray();
+        //StackArray = blockStack.ToArray();
     }
     public Block RemoveFromStack()
     {
@@ -74,7 +73,7 @@ public class BlockManager : MonoBehaviour
 
         if (removedBlock != null)
             print(string.Format("{0} is UNCHECKED", removedBlock.name));
-        StackArray = blockStack.ToArray();
+        //StackArray = blockStack.ToArray();
 
         return removedBlock;
     }
@@ -130,13 +129,23 @@ public class BlockManager : MonoBehaviour
         else
             return false;
     }
+    public bool IsLevelCompleted()
+    {
+        // level is completed when all the blocks are checked
+        if (blockStack.Count == blockList.Count)
+            return true;
+        else
+            return false;
+    }
     #endregion
+
+    private void Awake()
+    {
+        lineManager = FindObjectOfType<LineManager>();
+    }
 
     private void Start()
     {
-        //rowBlocks = new Block[rows, cols];
-        //colBlocks = new Block[cols, rows];
-
         // Spawn all blocks
         for (int r = 0; r < rows; r++)
         {
@@ -149,35 +158,15 @@ public class BlockManager : MonoBehaviour
         // starting block
         int startBlockIndex = Random.Range(0, blockList.Count);
         blockList[startBlockIndex].SetAsStartBlock();
+        lineManager.SetPositionIndex(blockStack.Count - 1);
+        lineManager.SetNextPosition(blockList[startBlockIndex].transform.position);
     }
-
-    private void Update()
-    {
-        //if (Input.GetMouseButtonUp(0) && !IsLevelCompleted())
-        //ClearStack();
-
-        if (Input.GetKeyDown(KeyCode.Space))
-        {
-            print("Last -- " + GetLastBlockInStack().gameObject.name);
-        }
-    }
-
-    public bool IsLevelCompleted()
-    {
-        // level is completed when all the blocks are checked
-        if (blockStack.Count == blockList.Count)
-            return true;
-        else
-            return false;
-    }
-
 
     public void OnLevelCompleted()
     {
         print("Level Complete");
-        //SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
-
 
     private Block SpawnBlocks(int row, int col)
     {
@@ -188,12 +177,8 @@ public class BlockManager : MonoBehaviour
         block.gameObject.name = string.Format("Row{0}-Col{1}", row + 1, col + 1);
         block.transform.SetParent(transform);
         block.SetPositionInMatrix(new Vector2Int(row, col));
-
-        //rowBlocks[row, col] = block;
-        //colBlocks[col, row] = block;
         return block;
     }
-
 
     public void RemoveAllBlocksAfterIndex(int index)
     {

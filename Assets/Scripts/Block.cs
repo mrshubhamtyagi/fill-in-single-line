@@ -6,6 +6,7 @@ public class Block : MonoBehaviour
 {
     private BlockManager blockManager;
     private GameObject greyBlock;
+    private LineManager lineManager;
 
     public enum BlockState
     {
@@ -57,6 +58,7 @@ public class Block : MonoBehaviour
     {
         blockManager = FindObjectOfType<BlockManager>();
         greyBlock = transform.GetChild(0).gameObject;
+        lineManager = FindObjectOfType<LineManager>();
     }
 
     private void OnMouseDown()
@@ -76,8 +78,11 @@ public class Block : MonoBehaviour
         // remove last added block if reached start block
         if (isStartingBlock && blockManager.GetStackLength() > 1)
         {
-            print("StartBlock");
             blockManager.RemoveAllBlocksAfterIndex(blockIndexInStack);
+
+            // Line Renderer
+            lineManager.RemoveAllPositionTill(blockIndexInStack);
+            lineManager.SetPositionIndex(blockIndexInStack);
             return;
         }
         else
@@ -87,6 +92,10 @@ public class Block : MonoBehaviour
             {
                 blockManager.AddToStack(this);
 
+                // Line Renderer
+                lineManager.SetPositionIndex(blockIndexInStack);
+                lineManager.SetNextPosition(transform.position);
+
                 // check is level is completed
                 if (blockManager.IsLevelCompleted())
                     blockManager.OnLevelCompleted();
@@ -95,6 +104,10 @@ public class Block : MonoBehaviour
             {
                 //Block removedBlock = blockManager.RemoveFromStack();
                 blockManager.RemoveAllBlocksAfterIndex(blockIndexInStack);
+
+                // Line Renderer
+                lineManager.RemoveAllPositionTill(blockIndexInStack);
+                lineManager.SetPositionIndex(blockIndexInStack);
             }
         }
     }
