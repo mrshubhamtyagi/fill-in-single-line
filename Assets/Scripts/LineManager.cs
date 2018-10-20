@@ -40,6 +40,12 @@ public class LineManager : MonoBehaviour
         blockManager = FindObjectOfType<BlockManager>();
     }
 
+    private void Start()
+    {
+        //lineRenderer.material.mainTextureScale = new Vector3(.3f, 1, 1);
+    }
+
+
     public void SetNextPosition(Vector3 pos)
     {
         pos.z = -1;
